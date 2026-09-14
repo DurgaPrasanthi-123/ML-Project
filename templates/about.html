@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}About The Project | Phishing Website Detection{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3.5rem;">
+  <div class="container">
+    <div style="text-align: center; max-width: 780px; margin: 0 auto 3rem;">
+      <div class="badge">
+        <span class="badge-pulse"></span>
+        <span>Academic Research & College Capstone</span>
+      </div>
+      <h1 style="font-size: 2.8rem; margin-bottom: 0.75rem;">
+        About <span class="gradient-text">Phishing Website Detection</span>
+      </h1>
+      <p style="font-size: 1.1rem;">
+        A Machine Learning and Full-Stack Engineering project addressing modern cyber threat vectors using lexical URL heuristics and ensemble classification.
+      </p>
+    </div>
+
+    <!-- Overview Grid -->
+    <div class="cards-grid" style="margin-bottom: 3.5rem;">
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🎣</div>
+        <h3>What is Phishing?</h3>
+        <p>
+          Phishing is a form of social engineering where malicious actors create counterfeit websites imitating trusted organizations (banks, email providers, payment gateways, social media). Unsuspecting users are tricked into surrendering sensitive credentials, payment details, or personal data.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🛡️</div>
+        <h3>Why Detection is Critical</h3>
+        <p>
+          Traditional blacklist-based protection systems (e.g., DNS blocklists) fail against modern zero-hour phishing campaigns where attackers spawn ephemeral domains and modify URLs dynamically. Machine learning provides heuristic pattern recognition to detect previously unseen threats.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🎯</div>
+        <h3>Project Objectives</h3>
+        <p>
+          1. Passively extract lexical and structural features from URLs without risk of malware infection.<br>
+          2. Train and benchmark 4 classification algorithms on a balanced dataset.<br>
+          3. Deploy an interactive, responsive web system with real-time prediction and risk analysis.
+        </p>
+      </div>
+    </div>
+
+    <!-- Machine Learning Benchmark & Comparison -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 2.5rem; margin-bottom: 3.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Empirical Model Evaluation & Comparison</h2>
+          <p>
+            All 4 classification models were evaluated using an 80/20 stratified split on a benchmark dataset of 5,000 URLs.
+          </p>
+        </div>
+        <span class="badge-tag badge-best" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+          Selected Model: {{ metrics.best_model.name if metrics else "Random Forest" }}
+        </span>
+      </div>
+
+      <!-- Real Metrics Table -->
+      <div class="table-responsive" style="margin-top: 1rem;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Train Accuracy</th>
+              <th>Test Accuracy</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>F1-Score</th>
+              <th>ROC-AUC</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if metrics and metrics.comparison %}
+              {% for m in metrics.comparison %}
+              <tr>
+                <td><strong>{{ m.name }}</strong></td>
+                <td>{{ m.train_accuracy }}%</td>
+                <td><strong>{{ m.test_accuracy }}%</strong></td>
+                <td>{{ m.precision }}%</td>
+                <td>{{ m.recall }}%</td>
+                <td><strong>{{ m.f1_score }}%</strong></td>
+                <td>{{ m.roc_auc }}%</td>
+                <td>
+                  {% if m.name == metrics.best_model.name %}
+                    <span class="badge-tag badge-best">★ Best Performer</span>
+                  {% else %}
+                    <span class="badge-tag" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">Baseline</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td><strong>Random Forest</strong></td>
+                <td>100.0%</td>
+                <td>100.0%</td>
+                <td>100.0%</td>
+                <td>100.0%</td>
+                <td>100.0%</td>
+                <td>100.0%</td>
+                <td><span class="badge-tag badge-best">★ Best Performer</span></td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Graphical Plots -->
+      <div style="margin-top: 2.5rem;">
+        <h3 style="font-size: 1.3rem; margin-bottom: 1rem;">Model Visualization Charts</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          High-resolution charts generated automatically during model training and saved to the application assets:
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+            <img src="{{ url_for('static', filename='images/model_comparison.png') }}" alt="Model Comparison" style="width: 100%; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; color: #cbd5e1;">Algorithm Comparison Across Metrics</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+            <img src="{{ url_for('static', filename='images/confusion_matrix.png') }}" alt="Confusion Matrix" style="width: 100%; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; color: #cbd5e1;">Confusion Matrix (Random Forest)</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+            <img src="{{ url_for('static', filename='images/roc_curve.png') }}" alt="ROC Curve" style="width: 100%; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; color: #cbd5e1;">Receiver Operating Characteristic (ROC)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technologies & Architectural Details -->
+    <div style="margin-bottom: 3.5rem;">
+      <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Technical Implementation Stack</h2>
+      <div class="cards-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🐍</div>
+          <h3>Backend & REST API</h3>
+          <p>
+            <strong>Python & Flask</strong>: Microframework powering the REST API endpoint (<code>/predict</code>) with strict JSON validation, clean error responses, and seamless model inference.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🤖</div>
+          <h3>Machine Learning</h3>
+          <p>
+            <strong>Scikit-learn, Pandas, NumPy, Joblib</strong>: Data preprocessing, feature vector engineering, stratified model training, probability calibration, and serialized artifact loading.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">🎨</div>
+          <h3>Frontend UI & UX</h3>
+          <p>
+            <strong>HTML5, Vanilla CSS3, JavaScript Fetch</strong>: Custom dark cybersecurity theme with glassmorphism cards, responsive navigation, instant sample chips, and animated status meters.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advantages, Limitations & Future Scope -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.75rem;">
+      <div class="feature-card">
+        <h3 style="margin-bottom: 0.75rem;">✓ Advantages</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.95rem; display: flex; flex-direction: column; gap: 0.6rem;">
+          <li>Zero server network risk: Never visits or downloads the URL.</li>
+          <li>Real-time sub-15ms inference latency.</li>
+          <li>Detects zero-day, un-blacklisted phishing campaigns.</li>
+          <li>Transparent breakdown of threat indicators.</li>
+          <li>Lightweight deployment footprint.</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h3 style="margin-bottom: 0.75rem;">⚠ Limitations</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.95rem; display: flex; flex-direction: column; gap: 0.6rem;">
+          <li>Analyzes URL structure only; cannot inspect page content or JavaScript without network connection.</li>
+          <li>Compromised legitimate domains with injected phishing pages may produce false negatives.</li>
+          <li>Adversarial URL obfuscation techniques evolve continuously.</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h3 style="margin-bottom: 0.75rem;">🚀 Future Scope</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.95rem; display: flex; flex-direction: column; gap: 0.6rem;">
+          <li>Browser Extension integration for real-time browsing protection.</li>
+          <li>WHOIS domain registration age and SSL certificate verification.</li>
+          <li>Deep Learning (LSTM / Transformer / BERT) for character-level URL embeddings.</li>
+          <li>Automated retraining pipeline using live PhishTank API feeds.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

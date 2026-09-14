@@ -1,0 +1,126 @@
+{
+    "dataset": {
+        "total_samples": 5000,
+        "train_samples": 4000,
+        "test_samples": 1000,
+        "num_features": 17,
+        "features_list": [
+            "url_length",
+            "domain_length",
+            "count_dots",
+            "count_hyphens",
+            "count_at",
+            "count_question",
+            "count_percent",
+            "count_equal",
+            "count_slash",
+            "count_digits",
+            "digit_ratio",
+            "is_ip_address",
+            "has_https",
+            "count_subdomains",
+            "has_suspicious_keywords",
+            "is_shortened",
+            "has_double_slash_path"
+        ],
+        "legitimate_count": 2500,
+        "phishing_count": 2500
+    },
+    "best_model": {
+        "name": "Random Forest",
+        "train_accuracy": 100.0,
+        "test_accuracy": 100.0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1_score": 100.0,
+        "roc_auc": 100.0,
+        "confusion_matrix": [
+            [
+                500,
+                0
+            ],
+            [
+                0,
+                500
+            ]
+        ]
+    },
+    "comparison": [
+        {
+            "name": "Logistic Regression",
+            "train_accuracy": 99.92,
+            "test_accuracy": 100.0,
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1_score": 100.0,
+            "roc_auc": 100.0,
+            "confusion_matrix": [
+                [
+                    500,
+                    0
+                ],
+                [
+                    0,
+                    500
+                ]
+            ]
+        },
+        {
+            "name": "Decision Tree",
+            "train_accuracy": 99.98,
+            "test_accuracy": 99.8,
+            "precision": 99.6,
+            "recall": 100.0,
+            "f1_score": 99.8,
+            "roc_auc": 99.8,
+            "confusion_matrix": [
+                [
+                    498,
+                    2
+                ],
+                [
+                    0,
+                    500
+                ]
+            ]
+        },
+        {
+            "name": "Random Forest",
+            "train_accuracy": 100.0,
+            "test_accuracy": 100.0,
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1_score": 100.0,
+            "roc_auc": 100.0,
+            "confusion_matrix": [
+                [
+                    500,
+                    0
+                ],
+                [
+                    0,
+                    500
+                ]
+            ]
+        },
+        {
+            "name": "Support Vector Machine",
+            "train_accuracy": 100.0,
+            "test_accuracy": 100.0,
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1_score": 100.0,
+            "roc_auc": 100.0,
+            "confusion_matrix": [
+                [
+                    500,
+                    0
+                ],
+                [
+                    0,
+                    500
+                ]
+            ]
+        }
+    ]
+}

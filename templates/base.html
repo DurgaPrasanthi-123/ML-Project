@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Phishing Website Detection | ML Cybersecurity System{% endblock %}</title>
+  <meta name="description" content="Machine Learning system for detecting phishing URLs and protecting users from web-based cyber attacks.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header>
+    <nav class="navbar" id="mainNavbar">
+      <div class="container nav-container">
+        <a href="{{ url_for('index') }}" class="brand">
+          <div class="brand-icon">🛡</div>
+          <span>PhishGuard<span style="color: #71717a;">.ML</span></span>
+        </a>
+
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation">
+          ☰
+        </button>
+
+        <ul class="nav-links" id="navLinks">
+          <li><a href="{{ url_for('index') }}" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a></li>
+          <li><a href="{{ url_for('detector') }}" class="nav-link {% if request.path == '/detector' %}active{% endif %}">URL Scanner</a></li>
+          <li><a href="{{ url_for('how_it_works') }}" class="nav-link {% if request.path == '/how-it-works' %}active{% endif %}">How It Works</a></li>
+          <li><a href="{{ url_for('about') }}" class="nav-link {% if request.path == '/about' %}active{% endif %}">About Project</a></li>
+          <li><a href="{{ url_for('detector') }}" class="nav-cta">Analyze URL</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div>
+          <div class="brand" style="margin-bottom: 0.75rem;">
+            <div class="brand-icon">🛡</div>
+            <span>PhishGuard<span style="color: #71717a;">.ML</span></span>
+          </div>
+          <p style="max-width: 420px; font-size: 0.9rem;">
+            A College Capstone Project in Cyber Threat Intelligence using Machine Learning algorithms to passively detect phishing websites.
+          </p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 1rem; margin-bottom: 0.75rem;">Quick Navigation</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('detector') }}">URL Detection Engine</a></li>
+            <li><a href="{{ url_for('how_it_works') }}">Detection Pipeline</a></li>
+            <li><a href="{{ url_for('about') }}">ML Model & Benchmark</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 style="font-size: 1rem; margin-bottom: 0.75rem;">Core Stack</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            Python • Flask • Scikit-learn<br>
+            Pandas • NumPy • Joblib<br>
+            HTML5 • Modern CSS • Vanilla JS
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Phishing Website Detection System • Academic College Project • Strictly for Educational & Research Use.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
