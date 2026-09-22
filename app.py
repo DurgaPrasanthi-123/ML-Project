@@ -24,6 +24,7 @@ from utils.feature_extraction import (
 )
 from utils.url_parser import parse_url, is_ssrf_target
 from utils.brand_impersonation import analyze_brand_impersonation
+from utils.dns_verifier import dns_verdict
 
 # Configure logging
 logging.basicConfig(
@@ -284,6 +285,37 @@ def predict():
                 "desc": "The registrable domain matches the brand's official domain property."
             })
 
+        # -------------------------------------------------------------- #
+        # DNS existence check (DNS-over-HTTPS). Catches lexically-clean
+        # fabricated domains (e.g. randomly generated hostnames) that no
+        # passive feature can see. Queries PUBLIC RESOLVERS ONLY — never
+        # the target server — and fails open to "unknown" on any error.
+        # -------------------------------------------------------------- #
+        dns_info = dns_verdict(parsed)
+        if dns_info["suspicious"]:
+            reasons.insert(0, {
+                "type": "danger",
+                "title": "Unregistered / Fabricated Domain",
+                "desc": dns_info["reason"] + ". Legitimate websites always have DNS records; a name with none is typically auto-generated or expired."
+            })
+            if not is_phishing:
+                prediction_label = "Phishing"
+                is_phishing = True
+                confidence = round(max(confidence, 85.0), 2)
+                risk_level = "High"
+                logger.warning(
+                    "DNS override (domain does not exist): '%s' -> Phishing",
+                    target_url,
+                )
+            elif confidence < 85:
+                confidence = 85.0
+        elif dns_info["exists"] and not is_phishing and dns_info["checked"]:
+            reasons.append({
+                "type": "success",
+                "title": "Domain Resolves in Global DNS",
+                "desc": f"The domain '{dns_info['registrable']}' has active DNS records, consistent with a real, reachable website."
+            })
+
         logger.info(f"URL: '{target_url}' -> Prediction: {prediction_label} ({confidence}%)")
 
         return jsonify({
@@ -299,6 +331,10 @@ def predict():
                 "brand": brand_info["brand"],
                 "techniques": brand_info["techniques"],
                 "official_domain": brand_info["official_domain"],
+            },
+            "dns_check": {
+                "checked": dns_info["checked"],
+                "exists": dns_info["exists"],
             },
             "reasons": reasons
         }), 200

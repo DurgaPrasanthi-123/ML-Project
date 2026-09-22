@@ -14,7 +14,7 @@
         URL <span class="gradient-text">Detector Engine</span>
       </h1>
       <p>
-        Enter any website address below. Our server will extract 17 structural and lexical features and execute inference against our trained Machine Learning ensemble in under 15 milliseconds.
+        Enter any website address below. Our server will extract 22 structural and lexical features, verify the domain's existence in global DNS (via DNS-over-HTTPS, without ever contacting the target server), and execute inference against our trained Machine Learning ensemble.
       </p>
     </div>
 
@@ -111,7 +111,7 @@
 
         <!-- Academic Disclaimer -->
         <div class="disclaimer-box">
-          <strong>Important Academic Disclaimer:</strong> This prediction is generated using an offline Machine Learning classification model based strictly on statistical and lexical URL heuristics. While the model achieves high empirical accuracy on our benchmark dataset, no ML algorithm provides an absolute 100% guarantee against zero-day targeted social engineering. Do not enter credentials on suspicious sites.
+          <strong>Important Academic Disclaimer:</strong> This prediction is generated using a Machine Learning classification model based on statistical and lexical URL heuristics, combined with a DNS existence verification (DNS-over-HTTPS) that flags unregistered or fabricated domain names. While the model achieves high empirical accuracy on our benchmark dataset, no ML algorithm provides an absolute 100% guarantee against zero-day targeted social engineering — a domain can be real yet malicious. Do not enter credentials on suspicious sites.
         </div>
       </div>
     </div>
@@ -120,7 +120,7 @@
     <div style="max-width: 850px; margin: 3.5rem auto 0;">
       <h3 style="font-size: 1.4rem; margin-bottom: 0.75rem;">Passive URL Feature Inspection Guide</h3>
       <p style="font-size: 0.95rem; margin-bottom: 1.25rem;">
-        The machine learning model relies on 17 specific characteristics extracted directly from the URL string without connecting to the remote host:
+        The machine learning model relies on 22 specific characteristics extracted directly from the URL string without connecting to the remote host:
       </p>
 
       <div class="table-responsive">

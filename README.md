@@ -142,8 +142,9 @@ Beyond the ML classifier, two dedicated modules harden the pipeline:
 
 - **`utils/url_parser.py`** — Single hardened URL decomposition used by every stage: approximate eTLD+1 (registrable-domain) extraction, multi-label public-suffix handling, IPv4/IPv6/decimal-IP detection, dangerous-scheme blocking (`javascript:`, `data:`, ...), and **SSRF defense** that rejects private/reserved/loopback targets.
 - **`utils/brand_impersonation.py`** — A rule engine covering 50+ major brands that combines three signals — (1) registrable-domain lookalikes with leetspeak/homoglyph normalization (`paypa1`, `micr0soft`), (2) brand tokens embedded in subdomains/paths of unrelated domains, and (3) corroborating context (abused TLDs, free hosting, credential keywords). Genuine brand domains are never flagged, and brand *mentions* on reputable sites (news articles, help pages) are whitelisted by the multi-signal requirement.
+- **`utils/dns_verifier.py`** — DNS existence verification over **DNS-over-HTTPS** (Cloudflare/Google public resolvers). A domain with no DNS records is unregistered or fabricated — a pattern no lexical feature can see (e.g. randomly generated hostnames). The check queries **public resolvers only, never the target server**, and is strictly fail-open: resolver outages degrade to "unknown" without altering the verdict.
 
-The rule engine acts as a **safety net at inference time**: when impersonation confidence ≥ 0.5, `/predict` escalates the verdict to *Phishing* even if the model alone is uncertain, and attaches the matched techniques to the response reasons.
+The rule engine acts as a **safety net at inference time**: when impersonation confidence ≥ 0.5, `/predict` escalates the verdict to *Phishing* even if the model alone is uncertain, and attaches the matched techniques to the response reasons. Likewise, a domain that verifiably does not exist in global DNS is overridden to *Phishing* (≥85% confidence) with an "Unregistered / Fabricated Domain" reason, while a domain that resolves adds a positive "Domain Resolves in Global DNS" indicator.
 
 ---
 
@@ -195,6 +196,7 @@ phishing-website-detection/
 ├── utils/
 │   ├── url_parser.py           # Hardened URL decomposition, eTLD+1, SSRF defense
 │   ├── brand_impersonation.py  # 50+ brand typosquatting/spoofing rule engine
+│   ├── dns_verifier.py         # DNS-over-HTTPS existence check (fake-domain detector)
 │   └── feature_extraction.py   # 22 passive URL features + explanation module
 │
 ├── model/
@@ -326,7 +328,7 @@ Open your favorite web browser and navigate to:
   }
   ```
 
-Input validation rejects dangerous schemes (`javascript:`, `data:`), malformed hostnames, and private/internal network targets (SSRF defense) with HTTP 400 and a descriptive message. Successful responses additionally include a `brand_analysis` object (`is_impersonation`, `brand`, `techniques`, `official_domain`).
+Input validation rejects dangerous schemes (`javascript:`, `data:`), malformed hostnames, and private/internal network targets (SSRF defense) with HTTP 400 and a descriptive message. Successful responses additionally include a `brand_analysis` object (`is_impersonation`, `brand`, `techniques`, `official_domain`) and a `dns_check` object (`checked`, `exists`).
 
 ### 2. Model Metrics Endpoint
 - **URL**: `/api/metrics`
@@ -417,7 +419,8 @@ The system produces 3 high-resolution visualization artifacts:
 
 ## 17. System Limitations
 - **Structural Analysis Only**: The system inspects lexical URL syntax without evaluating the remote page's HTML, CSS, or JavaScript content.
-- **Compromised Trusted Domains**: If an attacker compromises a legitimate server (e.g. WordPress blog) and hosts a phishing page inside a benign-looking directory, lexical features alone may yield a false negative.
+- **Compromised Trusted Domains**: If an attacker compromises a legitimate server (e.g. WordPress blog) and hosts a phishing page inside a benign-looking directory, lexical features alone may yield a false negative — the domain genuinely exists and looks normal.
+- **Registered-but-Parked Domains**: A fabricated-looking URL built on a *registered* (but unused/parked) domain resolves in DNS and passes the existence check; DNS only proves registration, not reputation.
 - **Adversarial Obfuscation**: Advanced adversaries continuously develop new evasions (such as homoglyph domain attacks with unicode characters).
 
 ---

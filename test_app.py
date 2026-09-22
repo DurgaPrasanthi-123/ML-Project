@@ -11,6 +11,7 @@ Tests:
 
 import sys
 import json
+from unittest.mock import patch
 from app import app
 
 def run_tests():
@@ -102,6 +103,28 @@ def run_tests():
 
     res = client.post("/predict", json={"url": "http://localhost/admin"})
     assert_test("localhost target returns HTTP 400 (SSRF defense)", res.status_code == 400)
+
+    # 6. DNS existence override (mocked - no network dependency in tests)
+    print("\nTesting DNS Existence Override (mocked)...")
+    fake_dns = {"checked": True, "exists": False, "suspicious": True,
+                "reason": "Domain 'fake-example123.com' has no DNS records",
+                "registrable": "fake-example123.com"}
+    with patch("app.dns_verdict", return_value=fake_dns):
+        res = client.post("/predict", json={"url": "https://fake-example123.com/login"})
+    d = json.loads(res.data.decode("utf-8"))
+    assert_test("Non-existent domain is overridden to Phishing", d.get("prediction") == "Phishing", f"Got: {d.get('prediction')}")
+    assert_test("DNS override confidence >= 85%", d.get("confidence", 0) >= 85.0, f"Got: {d.get('confidence')}")
+    assert_test("DNS override adds 'Unregistered / Fabricated Domain' reason",
+                any(r.get("title") == "Unregistered / Fabricated Domain" for r in d.get("reasons", [])))
+
+    real_dns = {"checked": True, "exists": True, "suspicious": False,
+                "reason": "", "registrable": "wikipedia.org"}
+    with patch("app.dns_verdict", return_value=real_dns):
+        res = client.post("/predict", json={"url": "https://en.wikipedia.org/wiki/Machine_learning"})
+    d = json.loads(res.data.decode("utf-8"))
+    assert_test("Existing domain stays Legitimate with DNS success reason",
+                d.get("prediction") == "Legitimate"
+                and any(r.get("title") == "Domain Resolves in Global DNS" for r in d.get("reasons", [])))
 
     print("\n" + "="*60)
     print(f" Summary: {passed}/{total} tests passed ({round(passed/total*100, 1)}%)")
