@@ -14,7 +14,6 @@ import json
 import logging
 import joblib
 import pandas as pd
-from urllib.parse import urlparse
 from flask import Flask, request, jsonify, render_template
 
 from utils.feature_extraction import (
@@ -23,6 +22,8 @@ from utils.feature_extraction import (
     get_feature_names,
     clean_url
 )
+from utils.url_parser import parse_url, is_ssrf_target
+from utils.brand_impersonation import analyze_brand_impersonation
 
 # Configure logging
 logging.basicConfig(
@@ -75,7 +76,8 @@ load_model_artifacts()
 
 def validate_url(url_string: str) -> tuple[bool, str]:
     """
-    Validate basic URL format without network access.
+    Validate URL format without network access, using the hardened parser
+    (scheme allow-list, hostname charset, SSRF targets, dangerous schemes).
     Returns (is_valid, error_message).
     """
     if not url_string or not isinstance(url_string, str):
@@ -85,19 +87,23 @@ def validate_url(url_string: str) -> tuple[bool, str]:
     if len(trimmed) < 4:
         return False, "URL is too short to be valid."
 
-    if len(trimmed) > 2048:
-        return False, "URL exceeds maximum permissible length of 2048 characters."
+    p = parse_url(trimmed, strict=True)
+    if p.parse_error:
+        friendly = {
+            "empty": "URL cannot be empty.",
+            "too_long": "URL exceeds maximum permissible length of 2048 characters.",
+            "missing_host": "Invalid domain or hostname format.",
+            "invalid_hostname": "Invalid domain or hostname format.",
+            "hostname_too_long": "Hostname exceeds permissible length.",
+        }
+        return False, friendly.get(
+            p.parse_error.split(":")[0].strip(),
+            "Invalid URL structure or scheme provided.",
+        )
 
-    # Reject dangerous script schemes
-    lower = trimmed.lower()
-    if lower.startswith("javascript:") or lower.startswith("data:") or lower.startswith("vbscript:"):
-        return False, "Invalid URL scheme provided."
-
-    # Parse structure
-    cleaned = clean_url(trimmed)
-    parsed = urlparse(cleaned)
-    if not parsed.netloc and not parsed.path:
-        return False, "Invalid domain or hostname format."
+    # Never analyze internal/private network targets (SSRF defense)
+    if is_ssrf_target(p):
+        return False, "Private, reserved, and internal network addresses cannot be analyzed."
 
     return True, ""
 
@@ -249,6 +255,35 @@ def predict():
         # Generate human-readable explanations & safety indicators
         reasons = explain_features(features_dict, prediction_label)
 
+        # -------------------------------------------------------------- #
+        # Safety net: brand-impersonation rule engine. Catches zero-day
+        # phishing that lexical features miss (e.g. brand embedded in a
+        # subdomain of an unrelated domain on a high-abuse TLD).
+        # -------------------------------------------------------------- #
+        parsed = parse_url(target_url, strict=True)
+        brand_info = analyze_brand_impersonation(parsed)
+        if brand_info["is_impersonation"]:
+            reasons.insert(0, {
+                "type": "danger",
+                "title": f"Brand Impersonation Detected ({brand_info['brand'].title() if brand_info['brand'] else 'Unknown Brand'})",
+                "desc": "Impersonation techniques: " + "; ".join(brand_info["techniques"]) + "."
+            })
+            if not is_phishing or confidence < 60:
+                prediction_label = "Phishing"
+                is_phishing = True
+                confidence = round(max(confidence, 60.0 + 35.0 * float(brand_info["confidence"])), 2)
+                risk_level = "High" if confidence > 80 else "Medium"
+                logger.warning(
+                    "Rule-engine override (brand impersonation): '%s' -> Phishing (%.0f%%) [%s]",
+                    target_url, confidence, "; ".join(brand_info["techniques"]),
+                )
+        elif brand_info["official_domain"]:
+            reasons.insert(0, {
+                "type": "success",
+                "title": "Verified Official Brand Domain",
+                "desc": "The registrable domain matches the brand's official domain property."
+            })
+
         logger.info(f"URL: '{target_url}' -> Prediction: {prediction_label} ({confidence}%)")
 
         return jsonify({
@@ -259,6 +294,12 @@ def predict():
             "is_phishing": is_phishing,
             "risk_level": risk_level,
             "features": features_dict,
+            "brand_analysis": {
+                "is_impersonation": brand_info["is_impersonation"],
+                "brand": brand_info["brand"],
+                "techniques": brand_info["techniques"],
+                "official_domain": brand_info["official_domain"],
+            },
             "reasons": reasons
         }), 200
 

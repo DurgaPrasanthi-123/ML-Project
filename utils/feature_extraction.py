@@ -10,6 +10,9 @@ import re
 import ipaddress
 from urllib.parse import urlparse
 
+from utils.url_parser import parse_url, find_redirect_params, SUSPICIOUS_TLDS
+from utils.brand_impersonation import analyze_brand_impersonation
+
 # List of known URL shortening domains
 SHORTENING_SERVICES = {
     "bit.ly", "tinyurl.com", "goo.gl", "t.co", "ow.ly", "is.gd",
@@ -42,7 +45,13 @@ FEATURE_NAMES = [
     "count_subdomains",
     "has_suspicious_keywords",
     "is_shortened",
-    "has_double_slash_path"
+    "has_double_slash_path",
+    # v2 structural & threat-intelligence features
+    "suspicious_tld",
+    "is_free_host",
+    "digits_in_host",
+    "has_redirect_param",
+    "brand_impersonation_score"
 ]
 
 
@@ -52,12 +61,10 @@ def get_feature_names():
 
 
 def clean_url(url: str) -> str:
-    """Ensure URL has a scheme for standard parsing."""
-    url = url.strip()
-    if not url.startswith("http://") and not url.startswith("https://"):
-        # Default to http:// if scheme omitted
-        url = "http://" + url
-    return url
+    """Ensure URL has a scheme for standard parsing (delegates to the shared
+    hardened normalizer; https is the safe default when scheme is omitted)."""
+    from utils.url_parser import normalize_url
+    return normalize_url(url)
 
 
 def is_ip(hostname: str) -> int:
@@ -132,6 +139,21 @@ def extract_features_dict(url: str) -> dict:
     # 7. Redirection indicator (// in path)
     double_slash_path = 1 if "//" in path else 0
 
+    # ------------------------------------------------------------------ #
+    # v2 features: single hardened parse shared by the whole pipeline
+    # ------------------------------------------------------------------ #
+    p = parse_url(url)
+    if p.parse_error:
+        # Parsing failed: neutral defaults (validation rejects these upstream)
+        suspicious_tld = is_free_host = has_redirect_param = digits_in_host = 0
+        brand_score = 0.0
+    else:
+        suspicious_tld = 1 if p.tld in SUSPICIOUS_TLDS else 0
+        is_free_host = 1 if p.is_free_host else 0
+        digits_in_host = sum(c.isdigit() for c in p.hostname)
+        has_redirect_param = 1 if find_redirect_params(p) else 0
+        brand_score = round(analyze_brand_impersonation(p)["confidence"], 3)
+
     return {
         "url_length": url_length,
         "domain_length": domain_length,
@@ -150,6 +172,11 @@ def extract_features_dict(url: str) -> dict:
         "has_suspicious_keywords": keyword_count,
         "is_shortened": shortened_flag,
         "has_double_slash_path": double_slash_path,
+        "suspicious_tld": suspicious_tld,
+        "is_free_host": is_free_host,
+        "digits_in_host": digits_in_host,
+        "has_redirect_param": has_redirect_param,
+        "brand_impersonation_score": brand_score,
     }
 
 
@@ -225,6 +252,34 @@ def explain_features(features: dict, prediction: str) -> list:
             "type": "warning",
             "title": "Abnormally Long URL",
             "desc": f"URL length is {features.get('url_length')} characters, which is typical for query strings hiding malicious tracking tokens."
+        })
+
+    if features.get("suspicious_tld", 0) == 1:
+        explanations.append({
+            "type": "warning",
+            "title": "High-Abuse TLD",
+            "desc": "The domain uses a top-level domain heavily abused in phishing campaigns (e.g. .xyz, .top, .click, .icu)."
+        })
+
+    if features.get("is_free_host", 0) == 1:
+        explanations.append({
+            "type": "warning",
+            "title": "Free / Shared Hosting",
+            "desc": "The page is hosted on a free or shared hosting platform that requires no identity verification, frequently abused for phishing kits."
+        })
+
+    if features.get("has_redirect_param", 0) == 1:
+        explanations.append({
+            "type": "warning",
+            "title": "Redirect Parameter Detected",
+            "desc": "A query parameter carries an absolute or scheme-prefixed URL, a common open-redirect / covert-channel pattern."
+        })
+
+    if features.get("digits_in_host", 0) >= 4:
+        explanations.append({
+            "type": "warning",
+            "title": "Numeric Hostname",
+            "desc": f"The hostname contains {features.get('digits_in_host')} digits, typical of auto-generated or disposable phishing infrastructure."
         })
 
     # Positive safety indicators

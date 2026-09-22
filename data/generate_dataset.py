@@ -20,6 +20,14 @@ import pandas as pd
 # Set fixed seed for reproducibility
 random.seed(42)
 
+# Free/anonymous hosting platforms frequently abused for phishing kits
+FREE_HOSTS = [
+    "weebly.com", "wixsite.com", "000webhostapp.com", "infinityfreeapp.com",
+    "rf.gd", "unaux.com", "ueniweb.com", "jimdofree.com", "glitch.me",
+    "netlify.app", "vercel.app", "firebaseapp.com", "blogspot.com",
+    "github.io", "byethost.com", "b-cdn.net", "herokuapp.com"
+]
+
 LEGITIMATE_DOMAINS = [
     # Search & Tech
     "google.com", "microsoft.com", "apple.com", "github.com", "gitlab.com",
@@ -43,6 +51,14 @@ LEGITIMATE_DOMAINS = [
     "bloomberg.com", "forbes.com", "nature.com", "sciencedirect.com", "arxiv.org",
     "reddit.com", "linkedin.com", "youtube.com", "netflix.com", "spotify.com",
     "medium.com", "quora.com", "instagram.com", "pinterest.com", "vimeo.com"
+]
+
+# Subdomain prefixes that are NORMAL on legitimate multi-service domains
+LEGIT_SUBDOMAINS = [
+    "www", "support", "api", "docs", "en", "m", "blog", "dev", "account",
+    "mail", "shop", "help", "portal", "app", "cdn", "assets", "img",
+    "news", "forum", "wiki", "store", "pay", "secure", "login", "auth",
+    "accounts", "billing", "sandbox", "staging", "test", "beta"
 ]
 
 LEGIT_PATHS = [
@@ -90,29 +106,76 @@ def generate_legitimate_url():
     # 90% legitimate sites use HTTPS today
     scheme = "https://" if random.random() < 0.90 else "http://"
     
-    # 35% chance of valid subdomain
+    # 45% chance of valid subdomain (incl. deep but genuine hierarchies)
     sub = ""
-    if random.random() < 0.35:
-        sub_prefix = random.choice(["www.", "support.", "api.", "docs.", "en.", "m.", "blog.", "dev.", "account."])
-        sub = sub_prefix
+    if random.random() < 0.45:
+        depth = random.choice([1, 1, 1, 2])
+        subs = [random.choice(LEGIT_SUBDOMAINS) for _ in range(depth)]
+        sub = ".".join(subs) + "."
     
     path = random.choice(LEGIT_PATHS)
+
+    # 15% of legit URLs carry tracking/query parameters (utm, session ids)
+    if random.random() < 0.15 and path:
+        sep = "&" if "?" in path else "?"
+        tracking = random.choice([
+            "utm_source=google&utm_medium=cpc",
+            "utm_source=newsletter&id=88213",
+            "ref=homepage&session=abc123",
+            "lang=en&region=us",
+        ])
+        path = f"{path}{sep}{tracking}"
+
+    # 8% of legit URLs use a numeric-but-plausible host (e.g. mirror nodes)
+    if random.random() < 0.08:
+        host = domain.split("/")[0]
+        domain = domain.replace(host, f"{host}", 1) if not host[0].isdigit() else domain
+
+    return f"{scheme}{sub}{domain}{path}"
+
+
+def generate_legitimate_brand_mention_url():
+    """
+    Generate a LEGITIMATE URL that merely *mentions* a security brand in its
+    path/query (news article, help page, merchant listing). These must NOT be
+    flagged: the brand appears on an official multi-label domain, never in a
+    subdomain of an unrelated registrable domain.
+    """
+    domain = random.choice(LEGITIMATE_DOMAINS)
+    brand_topic = random.choice([
+        "paypal", "stripe", "coinbase", "docusign", "netflix", "amazon",
+        "apple", "microsoft", "google", "facebook"
+    ])
+    path = random.choice([
+        f"/news/2026/{brand_topic}-announces-new-features",
+        f"/articles/how-to-use-{brand_topic}-safely",
+        f"/compare/{brand_topic}-vs-competitors",
+        f"/support/does-{brand_topic}-support-2fa",
+        f"/wiki/{brand_topic}",
+        f"/blog/merchant-guide?provider={brand_topic}",
+        f"/reviews/{brand_topic}-alternative",
+    ])
+    scheme = "https://" if random.random() < 0.9 else "http://"
+    sub = "www." if random.random() < 0.5 else ""
     return f"{scheme}{sub}{domain}{path}"
 
 
 def generate_phishing_url():
     """
     Generate a realistic phishing URL utilizing known evasion tactics:
-    - IP address hosts
+    - IP address hosts (incl. https and numeric-heavy hosts)
     - Brand typosquatting with hyphens
-    - Excessive deceptive subdomains
+    - Excessive deceptive subdomains (varied, not one fixed template)
+    - Free/anonymous hosting with brand-branded subdomains
     - Suspicious TLDs
     - Shortened redirection links
     - Path double-slashes and URL encoding
+    - Brand token in hostname chain (docusign-demo.auth-verify.click)
     """
     attack_type = random.choice([
         "ip_address", "typosquatting", "subdomain_spoof", "tld_abuse",
-        "shortener", "obfuscated_path", "encoded_query"
+        "shortener", "obfuscated_path", "encoded_query",
+        "free_host", "https_subdomain_spoof", "brand_token_host"
     ])
     brand = random.choice(PHISHING_BRANDS)
     path = random.choice(PHISHING_PATHS)
@@ -120,7 +183,8 @@ def generate_phishing_url():
     if attack_type == "ip_address":
         ip = f"{random.randint(11, 215)}.{random.randint(1, 250)}.{random.randint(1, 250)}.{random.randint(2, 254)}"
         port = f":{random.choice([8080, 8000, 8888, 3000, 8443])}" if random.random() < 0.35 else ""
-        return f"http://{ip}{port}/{brand}{path}"
+        scheme = "http://" if random.random() < 0.8 else "https://"
+        return f"{scheme}{ip}{port}/{brand}{path}"
         
     elif attack_type == "typosquatting":
         tld = random.choice(SUSPICIOUS_TLDS + [".com", ".net", ".org"])
@@ -131,14 +195,59 @@ def generate_phishing_url():
         return f"{scheme}{domain}{path}"
         
     elif attack_type == "subdomain_spoof":
-        legit_target = random.choice(["paypal.com", "bankofamerica.com", "apple.com", "netflix.com", "chase.com"])
-        evil_domain = f"security-check{random.randint(10, 999)}{random.choice(SUSPICIOUS_TLDS)}"
+        legit_target = random.choice(["paypal.com", "bankofamerica.com", "apple.com", "netflix.com", "chase.com",
+                                      "wellsfargo.com", "amazon.com", "microsoft.com", "google.com", "coinbase.com"])
+        evil_domains = [
+            f"security-check{random.randint(10, 999)}{random.choice(SUSPICIOUS_TLDS)}",
+            f"session-{random.randint(100000, 999999)}{random.choice(SUSPICIOUS_TLDS)}",
+            f"{brand}-update{random.randint(10, 99)}{random.choice(SUSPICIOUS_TLDS)}",
+            f"account-verify-{random.randint(1000, 9999)}{random.choice(SUSPICIOUS_TLDS)}",
+            f"cdn-auth{random.randint(10, 99)}{random.choice(SUSPICIOUS_TLDS)}",
+        ]
+        prefixes = ["login.", "secure.", "account.", "verify.", "auth.", "signin.", "", "my."]
         scheme = "http://" if random.random() < 0.60 else "https://"
-        return f"{scheme}login.{legit_target}.{evil_domain}{path}"
+        return f"{scheme}{random.choice(prefixes)}{legit_target}.{random.choice(evil_domains)}{path}"
+        
+    elif attack_type == "free_host":
+        # Brand keyword as subdomain on a free host: mail-suspended-account.weebly.com
+        host = random.choice(FREE_HOSTS)
+        sub = random.choice([
+            f"{brand}-support", f"user-{brand}", f"{brand}-login",
+            f"mail-{brand}-account", f"{brand}-verification",
+        ])
+        scheme = "https://" if random.random() < 0.75 else "http://"
+        return f"{scheme}{sub}.{host}/{random.choice(['', 'verify.php', 'login.html', 'confirm-account'])}"
+
+    elif attack_type == "https_subdomain_spoof":
+        # The hardest FN class: HTTPS + clean-looking brand subdomain + short path
+        legit_target = random.choice(["paypal.com", "chase.com", "apple.com", "netflix.com", "docusign.com"])
+        evil_tld = random.choice([".xyz", ".top", ".click", ".icu", ".cfd", ".live"])
+        style = random.choice([
+            f"login.{legit_target}.session-{random.randint(100000,999999)}{evil_tld}",
+            f"{legit_target}.verify-id{random.randint(1000,9999)}{evil_tld}",
+            f"secure-login.{legit_target}.account-update{evil_tld}",
+            f"{legit_target}.{random.choice(['auth-verify1', 'support-centre', 'client-portal'])}{evil_tld}",
+        ])
+        return f"https://{style}{random.choice(['/login', '/signin/verify.php', '/', '/confirm'])}"
+
+    elif attack_type == "brand_token_host":
+        # Brand token embedded in a hyphenated hostname chain
+        tld = random.choice(SUSPICIOUS_TLDS + [".click", ".com"])
+        host = random.choice([
+            f"app-us1.mailed-by-verify{tld}",
+            f"{brand}-demo-user1.auth-verify{random.randint(1,9)}{tld}",
+            f"ww1.{brand}id{tld}",
+            f"ref{random.randint(1,9)}.{brand}-steam{tld}",
+        ])
+        scheme = "https://" if random.random() < 0.7 else "http://"
+        return f"{scheme}{host}{path}"
         
     elif attack_type == "shortener":
         token = "".join(random.choices("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=7))
-        return f"{random.choice(SHORTENER_PREFIXES)}{token}?brand={brand}"
+        # Half of shortener phish carry a brand/credential context param
+        if random.random() < 0.5:
+            return f"{random.choice(SHORTENER_PREFIXES)}{token}?brand={brand}"
+        return f"{random.choice(SHORTENER_PREFIXES)}{token}"
         
     elif attack_type == "obfuscated_path":
         domain = f"{brand}-verification{random.choice(SUSPICIOUS_TLDS)}"
@@ -163,7 +272,11 @@ def build_dataset(total_samples: int = 5000) -> pd.DataFrame:
     legitimate_records = []
     seen_legit = set()
     while len(legitimate_records) < half:
-        url = generate_legitimate_url()
+        # 12% of legitimate side: brand *mentions* on reputable domains
+        if random.random() < 0.12:
+            url = generate_legitimate_brand_mention_url()
+        else:
+            url = generate_legitimate_url()
         if url not in seen_legit:
             seen_legit.add(url)
             legitimate_records.append({

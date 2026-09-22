@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
 [![Status](https://img.shields.io/badge/Project-College%20Capstone-brightgreen.svg)](#)
 
-A college capstone project and cybersecurity web application that determines whether a given website URL is **Legitimate** or **Phishing** using Machine Learning classification algorithms and passive lexical/structural heuristics.
+A college capstone project and cybersecurity web application that determines whether a given website URL is **Legitimate** or **Phishing** using Machine Learning classification algorithms, passive lexical/structural heuristics, and a **hybrid brand-impersonation rule engine**.
 
 ---
 
@@ -97,7 +97,7 @@ The development follows a structured 5-stage pipeline:
 Dataset (5,000 URLs)
        │
        ▼
-Passive Feature Extraction (17 Lexical Features)
+Passive Feature Extraction (22 Lexical & Structural Features)
        │
        ▼
 Stratified Train/Test Split (80% Train / 20% Test)
@@ -108,9 +108,12 @@ Algorithm Training & Cross-Validation
        │
        ▼
 Best Model Selection & Serialization (phishing_model.pkl)
+       │
+       ▼
+Inference + Brand-Impersonation Rule Engine (hybrid verdict)
 ```
 
-### Extracted Features (17 Heuristics)
+### Extracted Features (22 Heuristics)
 1. `url_length`: Total character count of the URL.
 2. `domain_length`: Total character length of the hostname.
 3. `count_dots`: Total count of period (`.`) characters.
@@ -128,6 +131,19 @@ Best Model Selection & Serialization (phishing_model.pkl)
 15. `has_suspicious_keywords`: Frequency of targeted words (`login`, `verify`, `account`, `banking`, `secure`, `update`, `wallet`).
 16. `is_shortened`: Binary flag indicating recognized URL shortener domain.
 17. `has_double_slash_path`: Binary flag indicating `//` redirection in URL path.
+18. `suspicious_tld`: Binary flag for high-abuse TLDs (`.xyz`, `.top`, `.click`, `.icu`, ...).
+19. `is_free_host`: Binary flag for free/anonymous hosting platforms (weebly, wixsite, netlify, ...).
+20. `digits_in_host`: Count of numeric digits in the hostname (disposable-infrastructure indicator).
+21. `has_redirect_param`: Binary flag for open-redirect query parameters (`?url=`, `?next=`, `?continue=`).
+22. `brand_impersonation_score`: Aggregate 0–1 confidence that the domain impersonates a well-known brand (typosquatting, leetspeak, subdomain embedding).
+
+### Hybrid Detection Architecture
+Beyond the ML classifier, two dedicated modules harden the pipeline:
+
+- **`utils/url_parser.py`** — Single hardened URL decomposition used by every stage: approximate eTLD+1 (registrable-domain) extraction, multi-label public-suffix handling, IPv4/IPv6/decimal-IP detection, dangerous-scheme blocking (`javascript:`, `data:`, ...), and **SSRF defense** that rejects private/reserved/loopback targets.
+- **`utils/brand_impersonation.py`** — A rule engine covering 50+ major brands that combines three signals — (1) registrable-domain lookalikes with leetspeak/homoglyph normalization (`paypa1`, `micr0soft`), (2) brand tokens embedded in subdomains/paths of unrelated domains, and (3) corroborating context (abused TLDs, free hosting, credential keywords). Genuine brand domains are never flagged, and brand *mentions* on reputable sites (news articles, help pages) are whitelisted by the multi-signal requirement.
+
+The rule engine acts as a **safety net at inference time**: when impersonation confidence ≥ 0.5, `/predict` escalates the verdict to *Phishing* even if the model alone is uncertain, and attaches the matched techniques to the response reasons.
 
 ---
 
@@ -167,6 +183,7 @@ phishing-website-detection/
 │
 ├── app.py                      # Flask Application & REST API endpoints
 ├── run.py                      # One-click startup launcher
+├── test_app.py                 # 38-case automated integration test suite
 ├── requirements.txt            # Locked Python dependencies
 ├── README.md                   # Full 19-section documentation
 ├── VIVA_QUESTIONS.md           # College viva voce defense preparation guide
@@ -176,7 +193,9 @@ phishing-website-detection/
 │   └── dataset.csv             # Curated balanced dataset
 │
 ├── utils/
-│   └── feature_extraction.py   # Reusable passive URL feature extraction module
+│   ├── url_parser.py           # Hardened URL decomposition, eTLD+1, SSRF defense
+│   ├── brand_impersonation.py  # 50+ brand typosquatting/spoofing rule engine
+│   └── feature_extraction.py   # 22 passive URL features + explanation module
 │
 ├── model/
 │   ├── train_model.py          # ML training, cross-validation, and metrics export
@@ -307,6 +326,8 @@ Open your favorite web browser and navigate to:
   }
   ```
 
+Input validation rejects dangerous schemes (`javascript:`, `data:`), malformed hostnames, and private/internal network targets (SSRF defense) with HTTP 400 and a descriptive message. Successful responses additionally include a `brand_analysis` object (`is_impersonation`, `brand`, `techniques`, `official_domain`).
+
 ### 2. Model Metrics Endpoint
 - **URL**: `/api/metrics`
 - **Method**: `GET`
@@ -358,7 +379,7 @@ curl -X POST http://127.0.0.1:5000/predict \
 ```json
 {
   "status": "success",
-  "url": "http://192.168.1.100:8080/paypal-security/login.php",
+  "url": "http://23.22.14.100:8080/paypal-security/login.php",
   "prediction": "Phishing",
   "confidence": 99.8,
   "is_phishing": true,

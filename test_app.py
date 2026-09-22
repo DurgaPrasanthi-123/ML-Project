@@ -63,9 +63,13 @@ def run_tests():
     # 4. Test Prediction API - Phishing
     print("\nTesting Predictions - Phishing URLs...")
     phish_test_urls = [
-        "http://192.168.1.105:8080/paypal-security/login.php",
+        "http://23.22.14.105:8080/paypal-security/login.php",
         "http://login.paypal.com.verify-billing-secure.xyz/signin.php",
-        "http://verify-chase-account-security-alert.net/banking/auth.php"
+        "http://verify-chase-account-security-alert.net/banking/auth.php",
+        # Regression: HTTPS subdomain-spoof class misclassified as legitimate
+        # by the original model (audit finding, reproduced in reproduce_bug.py)
+        "https://login.paypal.com.session-928431.xyz/login?cmd=account-login",
+        "https://mail-suspended-account.weebly.com/",
     ]
     for url in phish_test_urls:
         res = client.post("/predict", json={"url": url})
@@ -91,6 +95,13 @@ def run_tests():
     # Forbidden scheme
     res = client.post("/predict", json={"url": "javascript:alert(1)"})
     assert_test("Dangerous scheme javascript: returns HTTP 400", res.status_code == 400)
+
+    # SSRF defense: private/reserved targets must be rejected
+    res = client.post("/predict", json={"url": "http://192.168.1.105:8080/login.php"})
+    assert_test("Private-range IP target returns HTTP 400 (SSRF defense)", res.status_code == 400)
+
+    res = client.post("/predict", json={"url": "http://localhost/admin"})
+    assert_test("localhost target returns HTTP 400 (SSRF defense)", res.status_code == 400)
 
     print("\n" + "="*60)
     print(f" Summary: {passed}/{total} tests passed ({round(passed/total*100, 1)}%)")

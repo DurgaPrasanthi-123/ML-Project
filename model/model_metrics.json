@@ -3,7 +3,7 @@
         "total_samples": 5000,
         "train_samples": 4000,
         "test_samples": 1000,
-        "num_features": 17,
+        "num_features": 22,
         "features_list": [
             "url_length",
             "domain_length",
@@ -21,7 +21,12 @@
             "count_subdomains",
             "has_suspicious_keywords",
             "is_shortened",
-            "has_double_slash_path"
+            "has_double_slash_path",
+            "suspicious_tld",
+            "is_free_host",
+            "digits_in_host",
+            "has_redirect_param",
+            "brand_impersonation_score"
         ],
         "legitimate_count": 2500,
         "phishing_count": 2500
@@ -48,7 +53,7 @@
     "comparison": [
         {
             "name": "Logistic Regression",
-            "train_accuracy": 99.92,
+            "train_accuracy": 99.98,
             "test_accuracy": 100.0,
             "precision": 100.0,
             "recall": 100.0,
@@ -67,20 +72,20 @@
         },
         {
             "name": "Decision Tree",
-            "train_accuracy": 99.98,
+            "train_accuracy": 100.0,
             "test_accuracy": 99.8,
-            "precision": 99.6,
-            "recall": 100.0,
+            "precision": 100.0,
+            "recall": 99.6,
             "f1_score": 99.8,
             "roc_auc": 99.8,
             "confusion_matrix": [
                 [
-                    498,
-                    2
+                    500,
+                    0
                 ],
                 [
-                    0,
-                    500
+                    2,
+                    498
                 ]
             ]
         },
