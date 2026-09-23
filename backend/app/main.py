@@ -27,11 +27,15 @@ def create_app() -> FastAPI:
 
     # CORS for the React frontend
     app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_methods=["GET", "POST"],
-        allow_headers=["*"],
-    )
+    CORSMiddleware,
+    allow_origins=[
+        "https://ml-project-sbgj.onrender.com",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
     app.include_router(v1_router, prefix="/api/v1")
 
