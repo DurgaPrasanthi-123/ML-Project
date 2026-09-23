@@ -1,0 +1,60 @@
+{
+  "sources": {
+    "primary": "/home/saiteja/Saiteja/Prasanthi-project/ML-/data/phiusiil_processed",
+    "secondary": "/home/saiteja/Saiteja/Prasanthi-project/ML-/data/processed"
+  },
+  "seed": 42,
+  "fractions": {
+    "train": 0.7,
+    "validation": 0.15,
+    "test": 0.15
+  },
+  "pooled_rows": 218472,
+  "pooled_class_distribution": {
+    "phishing": 128863,
+    "legitimate": 89609
+  },
+  "splits": {
+    "train.csv": {
+      "rows": 152556,
+      "class_distribution": {
+        "phishing": 89995,
+        "legitimate": 62561
+      },
+      "by_source": {
+        "phiusiil": 112470,
+        "synthetic": 40086
+      }
+    },
+    "validation.csv": {
+      "rows": 32943,
+      "class_distribution": {
+        "phishing": 19302,
+        "legitimate": 13641
+      },
+      "by_source": {
+        "phiusiil": 23493,
+        "synthetic": 9450
+      }
+    },
+    "test.csv": {
+      "rows": 32973,
+      "class_distribution": {
+        "phishing": 19566,
+        "legitimate": 13407
+      },
+      "by_source": {
+        "phiusiil": 23582,
+        "synthetic": 9391
+      }
+    }
+  },
+  "leakage_checks": {
+    "train_validation_registrable_domain_overlap": 0,
+    "train_validation_url_overlap": 0,
+    "train_test_registrable_domain_overlap": 0,
+    "train_test_url_overlap": 0,
+    "validation_test_registrable_domain_overlap": 0,
+    "validation_test_url_overlap": 0
+  }
+}

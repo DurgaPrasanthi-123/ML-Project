@@ -49,3 +49,20 @@ venv.bak/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Derived data (regenerate: python data/prepare_dataset.py)
+data/processed/
+data/phiusiil_processed/
+
+# Runtime state (scan history is created at serving time)
+backend/artifacts/scan_history.db
+
+# Training outputs (regenerate: backend/training/train.py)
+backend/models/
+backend/reports/
+backend/evaluation/*.json
+backend/evaluation/__pycache__/

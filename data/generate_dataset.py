@@ -70,7 +70,16 @@ LEGIT_PATHS = [
     "/search?q=machine+learning&lang=en", "/category/technology?sort=recent",
     "/blog/post?id=1024&category=ai", "/pricing/enterprise-plan", "/team/leadership",
     # Realistic legitimate security & account paths
-    "/login", "/account/overview", "/security/settings", "/auth/callback"
+    "/login", "/account/overview", "/security/settings", "/auth/callback",
+    # Very short deep links (1-2 char segments) — common on real sites and a
+    # historic FP trigger: models must learn short paths are class-neutral.
+    "/3/", "/e/", "/x1", "/a/b", "/p/42", "/d/3", "/id/7", "/en/us",
+    "/downloads/", "/en-US/", "/blog/", "/wiki/", "/docs/", "/api/",
+    # Hyphenated, underscored and numeric-path shapes (neutral in real traffic)
+    "/user-guide/manual", "/about-us/team", "/products/sale_items",
+    "/year/2026/page/12", "/post/2024/10/15/notes", "/v1/users/8842",
+    # Trailing-slash and bare-directory variants
+    "/jobs/", "/help/", "/archive/2025/", "/shop/catalog/",
 ]
 
 PHISHING_BRANDS = [
@@ -265,8 +274,14 @@ def generate_phishing_url():
         return f"{scheme}{domain}{path}"
 
 
-def build_dataset(total_samples: int = 5000) -> pd.DataFrame:
-    """Build a balanced dataset of legitimate (0) and phishing (1) URLs."""
+def build_dataset(total_samples: int = 60000) -> pd.DataFrame:
+    """Build a balanced dataset of legitimate (0) and phishing (1) URLs.
+
+    Default 60,000 rows: when merged with PhiUSIIL (~233K rows of bare
+    homepage legit URLs), this share of deep-link legitimate traffic is large
+    enough to prevent path/query-bearing URLs from being learned as phishing
+    indicators, while keeping the source's real-world phishing diversity.
+    """
     half = total_samples // 2
     
     legitimate_records = []
@@ -307,9 +322,9 @@ def build_dataset(total_samples: int = 5000) -> pd.DataFrame:
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(current_dir, "dataset.csv")
-    
-    print("Generating balanced dataset of 5,000 URLs...")
-    df = build_dataset(5000)
+
+    print("Generating balanced dataset of 60,000 URLs...")
+    df = build_dataset(60000)
     df.to_csv(output_path, index=False)
     
     print(f"[SUCCESS] Dataset generated and saved to: {output_path}")

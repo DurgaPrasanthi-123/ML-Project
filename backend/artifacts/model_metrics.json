@@ -1,0 +1,148 @@
+{
+  "best_model": "XGBoost",
+  "model_version": "3.0.0",
+  "trained_at": "2026-09-23T05:36:07.921994+00:00",
+  "feature_names": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "fragment_length",
+    "count_dots",
+    "count_hyphens",
+    "count_underscores",
+    "count_digits",
+    "count_special_chars",
+    "count_encoded_chars",
+    "count_at",
+    "subdomain_depth",
+    "count_params",
+    "path_depth",
+    "has_fragment",
+    "is_ip_host",
+    "has_https",
+    "has_explicit_port",
+    "has_unusual_port",
+    "has_credentials_in_url",
+    "is_shortener",
+    "is_free_host",
+    "suspicious_tld",
+    "double_slash_in_path",
+    "hostname_entropy",
+    "url_entropy",
+    "path_entropy",
+    "hostname_digit_ratio",
+    "path_digit_ratio",
+    "digit_ratio",
+    "special_char_ratio",
+    "max_consecutive_chars",
+    "max_consecutive_digits",
+    "keyword_hits",
+    "suspicious_token_count",
+    "brand_token_count",
+    "brand_impersonation_score",
+    "brand_embedded",
+    "punycode_host",
+    "dns_exists",
+    "guardrail_flag_count"
+  ],
+  "preprocessing": "none (tree model)",
+  "dataset": {
+    "total": 218472,
+    "train": 152556,
+    "test": 32973,
+    "legitimate": 89609,
+    "phishing": 128863,
+    "n_features": 42,
+    "splits_dir": "/home/saiteja/Saiteja/Prasanthi-project/ML-/data/combined"
+  },
+  "metrics": {
+    "threshold": 0.65,
+    "accuracy": 0.991,
+    "precision": 0.9958,
+    "recall": 0.989,
+    "f1_score": 0.9924,
+    "confusion_matrix": {
+      "tn": 13326,
+      "fp": 81,
+      "fn": 215,
+      "tp": 19351
+    },
+    "roc_auc": 0.9988,
+    "pr_auc": 0.9993,
+    "name": "XGBoost"
+  },
+  "comparison": [
+    {
+      "model": "Logistic Regression",
+      "threshold": 0.4,
+      "accuracy": 0.9467,
+      "precision": 0.9611,
+      "recall": 0.9486,
+      "f1_score": 0.9548,
+      "confusion_matrix": {
+        "tn": 12656,
+        "fp": 751,
+        "fn": 1005,
+        "tp": 18561
+      },
+      "roc_auc": 0.9801,
+      "pr_auc": 0.9876
+    },
+    {
+      "model": "Random Forest",
+      "threshold": 0.45,
+      "accuracy": 0.9906,
+      "precision": 0.9945,
+      "recall": 0.9897,
+      "f1_score": 0.9921,
+      "confusion_matrix": {
+        "tn": 13299,
+        "fp": 108,
+        "fn": 201,
+        "tp": 19365
+      },
+      "roc_auc": 0.998,
+      "pr_auc": 0.999
+    },
+    {
+      "model": "XGBoost",
+      "threshold": 0.65,
+      "accuracy": 0.991,
+      "precision": 0.9958,
+      "recall": 0.989,
+      "f1_score": 0.9924,
+      "confusion_matrix": {
+        "tn": 13326,
+        "fp": 81,
+        "fn": 215,
+        "tp": 19351
+      },
+      "roc_auc": 0.9988,
+      "pr_auc": 0.9993
+    }
+  ],
+  "real_world_only_metrics": {
+    "threshold": 0.65,
+    "accuracy": 0.9908,
+    "precision": 0.9998,
+    "recall": 0.9856,
+    "f1_score": 0.9927,
+    "confusion_matrix": {
+      "tn": 8678,
+      "fp": 3,
+      "fn": 214,
+      "tp": 14687
+    },
+    "roc_auc": 0.9986,
+    "pr_auc": 0.9994
+  },
+  "selection": {
+    "split": "validation",
+    "rule": "max validation recall at the recall-target threshold; tie-break precision, then F1, then ROC-AUC",
+    "target_recall": 0.95,
+    "validation_recall": 0.9911,
+    "validation_precision": 0.995,
+    "selected_threshold": 0.65
+  }
+}
